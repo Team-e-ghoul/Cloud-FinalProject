@@ -59,3 +59,7 @@ First get a shell, then run:
 ```bash
 psql -U postgres -d testdb
 ```
+
+
+gitlab username: k3rn3lpanic
+gitlab password: gipuhpoJcpe31!

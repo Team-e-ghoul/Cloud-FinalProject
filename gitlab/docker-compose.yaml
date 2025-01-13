@@ -1,0 +1,35 @@
+version: '3.8'
+
+networks:
+  gitlab-network:
+    driver: bridge
+
+services:
+  gitlab:
+    image: gitlab/gitlab-ce:17.5.5-ce.0
+    container_name: gitlab
+    hostname: gitlab.local
+    restart: always
+    networks:
+      gitlab-network:
+    ports:
+      - "8443:443"
+      - "80:80"
+      - "8022:22"
+    environment:
+      GITLAB_ROOT_PASSWORD: "matin@1234"
+    volumes:
+      - /srv/gitlab/config:/etc/gitlab
+      - /srv/gitlab/logs:/var/log/gitlab
+      - /srv/gitlab/data:/var/opt/gitlab
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: always
+    networks:
+      gitlab-network:
+    volumes:
+      - /srv/gitlab-runner/config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["/bin/bash", "-c", "mkdir -p /etc/gitlab-runner && touch /etc/gitlab-runner/config.toml && gitlab-runner run --working-directory=/home/gitlab-runner"]
