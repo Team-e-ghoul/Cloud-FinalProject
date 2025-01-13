@@ -4,7 +4,7 @@ set -e
 echo "Configuring replica for streaming replication..."
 
 function wait_for_primary() {
-  until PGPASSWORD=replica_password pg_isready -h pg-primary -U replica_user; do
+  until PGPASSWORD=replica_password pg_isready -h primary -U replica_user; do
     echo "Waiting for primary PostgreSQL to be ready..."
     sleep 2
   done
@@ -26,7 +26,7 @@ hot_standby = on
 EOF
 
 # Allow replication connections in pg_hba.conf
-echo "host    replication     replica_user     172.0.0.0/8     md5" >> /var/lib/postgresql/data/pg_hba.conf
+echo "host    replication     replica_user     0.0.0.0/0     md5" >> /var/lib/postgresql/data/pg_hba.conf
 
 mkdir -p /var/lib/postgresql/data/archive
 chmod 700 /var/lib/postgresql/data/archive
@@ -37,4 +37,4 @@ rm -rf "$PGDATA"/*
 
 echo "Starting base backup from primary..."
 
-PGPASSWORD=replica_password pg_basebackup -h pg-primary -U replica_user -D "$PGDATA" -Fp -Xs -P -R
+PGPASSWORD=replica_password pg_basebackup -h primary -U replica_user -D "$PGDATA" -Fp -Xs -P -R

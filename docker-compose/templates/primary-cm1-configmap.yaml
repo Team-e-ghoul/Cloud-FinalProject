@@ -1,0 +1,42 @@
+apiVersion: v1
+data:
+  01_init_primary.sql: |
+    -- 01_init_primary.sql
+
+    -- Create a user for replication with REPLICATION privilege
+    CREATE ROLE replica_user WITH LOGIN REPLICATION PASSWORD 'replica_password';
+
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      user_id INT NOT NULL,
+      product TEXT NOT NULL,
+      quantity INT NOT NULL,
+      address TEXT NOT NULL,
+      status TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      is_admin BOOLEAN NOT NULL
+    );
+
+    INSERT INTO users (is_admin) VALUES (true);
+
+    ALTER SYSTEM SET wal_level = 'replica';
+    ALTER SYSTEM SET max_wal_senders = '3';
+    ALTER SYSTEM SET wal_keep_size = '64';
+  02_config_primary.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Appending pg_hba.conf rules for replication..."
+
+    # Append the rule that allows replication connections from your Docker network
+    echo "host    replication    replica_user    0.0.0.0/0    md5" >> "$PGDATA/pg_hba.conf"
+
+    pg_ctl -D "$PGDATA" reload
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: primary
+  name: primary-cm1

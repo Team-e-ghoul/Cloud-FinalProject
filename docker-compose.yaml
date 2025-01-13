@@ -3,7 +3,7 @@ version: '3.8'
 services:
   primary:
     image: postgres:15
-    container_name: pg-primary
+    container_name: primary
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -13,17 +13,12 @@ services:
     volumes:
       - primary_data:/var/lib/postgresql/data
       - ./init/primary:/docker-entrypoint-initdb.d
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
     networks:
       - pg_net
 
   replica:
     image: postgres:15
-    container_name: pg-replica
+    container_name: replica
     depends_on:
       - primary
     environment:
@@ -40,7 +35,7 @@ services:
 
   replica2:
     image: postgres:15
-    container_name: pg-replica2
+    container_name: replica2
     depends_on:
       - primary
     environment:
@@ -50,15 +45,13 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - replica_data:/var/lib/postgresql/data
+      - replica_data2:/var/lib/postgresql/data
       - ./init/replica:/docker-entrypoint-initdb.d
     networks:
       - pg_net
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: k3rn3lpanicc/cc-final-backend:latest
     container_name: node-backend
     depends_on:
       - primary
@@ -77,6 +70,7 @@ services:
 volumes:
   primary_data:
   replica_data:
+  replica_data2:
 
 networks:
   pg_net:

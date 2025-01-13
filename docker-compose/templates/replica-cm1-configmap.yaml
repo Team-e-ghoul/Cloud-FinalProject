@@ -1,0 +1,48 @@
+apiVersion: v1
+data:
+  01_init_replica.sh: |
+    #!/bin/bash
+    set -e
+
+    echo "Configuring replica for streaming replication..."
+
+    function wait_for_primary() {
+      until PGPASSWORD=replica_password pg_isready -h primary -U replica_user; do
+        echo "Waiting for primary PostgreSQL to be ready..."
+        sleep 2
+      done
+      echo "Primary PostgreSQL is ready."
+    }
+
+    wait_for_primary
+
+
+    cat >> /var/lib/postgresql/data/postgresql.conf <<EOF
+
+    # REPLICATION CONFIG
+    wal_level = replica
+    archive_mode = on
+    archive_command = 'cp %p /var/lib/postgresql/data/archive/%f'
+    max_wal_senders = 3
+    wal_keep_size = 64
+    hot_standby = on
+    EOF
+
+    # Allow replication connections in pg_hba.conf
+    echo "host    replication     replica_user     0.0.0.0/8     md5" >> /var/lib/postgresql/data/pg_hba.conf
+
+    mkdir -p /var/lib/postgresql/data/archive
+    chmod 700 /var/lib/postgresql/data/archive
+
+    pg_ctl -D "$PGDATA" -m fast -w stop
+
+    rm -rf "$PGDATA"/*
+
+    echo "Starting base backup from primary..."
+
+    PGPASSWORD=replica_password pg_basebackup -h primary -U replica_user -D "$PGDATA" -Fp -Xs -P -R
+kind: ConfigMap
+metadata:
+  labels:
+    io.kompose.service: replica
+  name: replica-cm1
