@@ -1,0 +1,83 @@
+version: '3.8'
+
+services:
+  primary:
+    image: postgres:15
+    container_name: pg-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - primary_data:/var/lib/postgresql/data
+      - ./init/primary:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pg_net
+
+  replica:
+    image: postgres:15
+    container_name: pg-replica
+    depends_on:
+      - primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+      - ./init/replica:/docker-entrypoint-initdb.d
+    networks:
+      - pg_net
+
+  replica2:
+    image: postgres:15
+    container_name: pg-replica2
+    depends_on:
+      - primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: testdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - replica_data:/var/lib/postgresql/data
+      - ./init/replica:/docker-entrypoint-initdb.d
+    networks:
+      - pg_net
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: node-backend
+    depends_on:
+      - primary
+      - replica
+    ports:
+      - "3000:3000"
+    networks:
+      - pg_net
+    environment:
+      PRIMARY_HOST: pg-primary
+      REPLICA_HOST: pg-replica
+      REPLICA_HOST2: pg-replica2
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: testdb
+volumes:
+  primary_data:
+  replica_data:
+
+networks:
+  pg_net:
+    driver: bridge
