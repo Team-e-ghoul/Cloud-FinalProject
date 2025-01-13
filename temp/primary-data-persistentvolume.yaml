@@ -13,7 +13,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   hostPath:
-    path: /mnt/data/pg-primary
+    path: /mnt/data/primary
   claimRef:
     name: primary-data
     namespace: default

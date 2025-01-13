@@ -13,7 +13,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   hostPath:
-    path: /mnt/data/pg-replica
+    path: /mnt/data/replica
   claimRef:
     name: replica-data
     namespace: default
